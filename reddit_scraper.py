@@ -45,8 +45,12 @@ async def main():
             # page loaded
 
             # toggle dark mode
-            await page.click('div[class="header-user-dropdown"]')
-            await page.click('i[class*="icon-night"]')
+            try:
+                await page.click('div[class="header-user-dropdown"]', timeout=1000)
+                await page.click('i[class*="icon-night"]', timeout=1000)
+
+            except:
+                pass
 
             # get top post's inner text
             post_txt = await page.wait_for_selector(post_txt_selector)

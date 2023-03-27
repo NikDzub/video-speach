@@ -9,6 +9,7 @@ from moviepy.editor import (
     imageio,
     CompositeAudioClip,
     CompositeVideoClip,
+    TextClip,
     concatenate_videoclips,
 )
 
@@ -58,6 +59,22 @@ for comment in post["comments"]:
         .set_duration(comment_audio.duration)
     )
     reddit_clips.append(comment_clip)
+
+# mark
+mark_duration = 10
+bg_music_file = AudioFileClip("./media/bg_music/smoke.mp3")
+bg_music = CompositeAudioClip([bg_music_file]).set_duration(mark_duration)
+
+mark = (
+    ImageClip("./media/mark/free_coins_1.png")
+    .set_duration(mark_duration)
+    .set_opacity(0.8)
+    .resize(width=width)
+    .margin(top=200, opacity=0)
+    .set_fps(24)
+    .set_audio(bg_music)
+)
+reddit_clips.append(mark)
 
 
 reddit_clips_concat = concatenate_videoclips(reddit_clips, method="compose")

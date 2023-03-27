@@ -109,7 +109,6 @@ async def main():
             else:
                 print(f"[{i}/{states_len}]{state} ❌")
 
-            await page.wait_for_timeout(43543345)
             await page.close()
             await browser.close()
 
