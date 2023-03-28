@@ -1,6 +1,7 @@
 import os
 import json
 import random
+from collections import Counter
 from moviepy.video.io.ffmpeg_tools import *
 from moviepy.editor import (
     VideoFileClip,
@@ -16,6 +17,153 @@ from moviepy.editor import (
 
 post_json = open("./media/post/post.json", encoding="utf-8")
 post = json.load(post_json)
+
+# generate title
+ignore_words = [
+    "all",
+    "just",
+    "being",
+    "over",
+    "both",
+    "through",
+    "yourselves",
+    "its",
+    "before",
+    "herself",
+    "had",
+    "should",
+    "to",
+    "only",
+    "under",
+    "ours",
+    "has",
+    "do",
+    "them",
+    "his",
+    "very",
+    "they",
+    "not",
+    "during",
+    "now",
+    "him",
+    "nor",
+    "did",
+    "this",
+    "she",
+    "each",
+    "further",
+    "where",
+    "few",
+    "because",
+    "doing",
+    "some",
+    "are",
+    "our",
+    "ourselves",
+    "out",
+    "what",
+    "for",
+    "while",
+    "does",
+    "above",
+    "between",
+    "t",
+    "be",
+    "we",
+    "who",
+    "were",
+    "here",
+    "hers",
+    "by",
+    "on",
+    "about",
+    "of",
+    "against",
+    "s",
+    "or",
+    "own",
+    "into",
+    "yourself",
+    "down",
+    "your",
+    "from",
+    "her",
+    "their",
+    "there",
+    "been",
+    "whom",
+    "too",
+    "themselves",
+    "was",
+    "until",
+    "more",
+    "himself",
+    "that",
+    "but",
+    "don",
+    "with",
+    "than",
+    "those",
+    "he",
+    "me",
+    "myself",
+    "these",
+    "up",
+    "will",
+    "below",
+    "can",
+    "theirs",
+    "my",
+    "and",
+    "then",
+    "is",
+    "am",
+    "it",
+    "an",
+    "as",
+    "itself",
+    "at",
+    "have",
+    "in",
+    "any",
+    "if",
+    "again",
+    "no",
+    "when",
+    "same",
+    "how",
+    "other",
+    "which",
+    "you",
+    "after",
+    "most",
+    "such",
+    "why",
+    "a",
+    "off",
+    "i",
+    "yours",
+    "so",
+    "the",
+    "having",
+    "once",
+]
+all_words = []
+
+for comment in post["comments"]:
+    comment_txt_array = comment["comment_txt"].lower().split()
+    for word in comment_txt_array:
+        if word not in ignore_words:
+            all_words.append(word)
+
+most_common = Counter(all_words).most_common()
+
+vid_title = ""
+for index, word in enumerate(most_common):
+    if index < 5:
+        vid_title += word[0] + " "
+
+print(vid_title)
 
 # game bg
 games = os.listdir("./media/games")
@@ -76,10 +224,10 @@ mark = (
 )
 reddit_clips.append(mark)
 
-
+# video w/o game
 reddit_clips_concat = concatenate_videoclips(reddit_clips, method="compose")
 
-
+# bg_clip
 game_clip = game_clip.crop(
     x_center=game_clip.size[0] / 2,
     width=width,
@@ -87,12 +235,9 @@ game_clip = game_clip.crop(
     # y1=0,
     # y2=game_clip.size[1],
 )
-random_start = random.uniform(10, game_clip.duration)
+random_start = random.uniform(10, game_clip.duration - 240)
 game_clip = game_clip.subclip(random_start).set_duration(reddit_clips_concat.duration)
 
-
-# all_clips = concatenate_videoclips([game_clip, reddit_clips_concat], method="compose")
+# compose & save
 all_clips = CompositeVideoClip(clips=[game_clip, reddit_clips_concat])
-
-
-all_clips.write_videofile("./media/vids/clip.mp4")
+all_clips.write_videofile(f"./media/vids/{vid_title}#reddit.mp4")

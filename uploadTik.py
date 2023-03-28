@@ -72,7 +72,7 @@ async def main():
 
             if id != False:
                 for vid in vids:
-                    print(vid)
+                    # print(vid)
 
                     page.on(
                         "filechooser",
@@ -96,7 +96,6 @@ async def main():
                         ".modal-title-container"
                     ).click()
                     # await page.click("text=Post")
-                    # print("5")
                     await page.wait_for_timeout(1000)
 
                 # save
@@ -104,10 +103,10 @@ async def main():
                     path=f"{states_path}/{state}.json"
                 )
                 # save
-                print(f"[{i}/{states_len}]{state} 📹✅")
+                print(f"[{i}/{states_len}] {state} 📹✅")
 
             else:
-                print(f"[{i}/{states_len}]{state} ❌")
+                print(f"[{i}/{states_len}] {state} ❌")
 
             await page.close()
             await browser.close()

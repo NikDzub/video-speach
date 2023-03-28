@@ -39,7 +39,7 @@ async def main():
             await page.emulate_media(color_scheme="dark")
 
             # 🕹  🕹🕹 STARTrrtrtrt t 🕹🕹
-            await page.goto(url_hour, wait_until="load")
+            await page.goto(url_day, wait_until="load")
             post = await page.wait_for_selector(post_selector)
             post_url = page.url
             # page loaded
@@ -78,20 +78,32 @@ async def main():
             # loop over txt's & screenshot block w same index
             for index, comment_txt in enumerate(comment_txts):
                 if index < 5:
-                    path = f"{comments_img_path}/{index}/comment.png"
-                    speach_path = f"{comments_img_path}/{index}/comment_speach.aiff"
+                    try:
+                        txt = await comment_txt.inner_text()
+                        if txt.__len__() > 0:
+                            path = f"{comments_img_path}/{index}/comment.png"
+                            speach_path = (
+                                f"{comments_img_path}/{index}/comment_speach.aiff"
+                            )
 
-                    await comment_blocks[index].scroll_into_view_if_needed(timeout=1000)
-                    await comment_blocks[index].screenshot(path=path)
-                    txt = await comment_txt.inner_text()
+                            await comment_blocks[index].scroll_into_view_if_needed(
+                                timeout=1000
+                            )
+                            await comment_blocks[index].evaluate(
+                                'e => e.style.paddingBottom="50px"'
+                            )
+                            await comment_blocks[index].screenshot(path=path)
 
-                    # append to comments array
-                    comment = {
-                        "comment_txt": txt,
-                        "comment_img": path,
-                        "comment_speach": speach_path,
-                    }
-                    comments.append(comment)
+                        # append to comments array
+                        comment = {
+                            "comment_txt": txt,
+                            "comment_img": path,
+                            "comment_speach": speach_path,
+                        }
+                        comments.append(comment)
+
+                    except:
+                        pass
 
             # post.json construction
             post_json = {
