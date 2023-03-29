@@ -95,7 +95,7 @@ async def main():
                     await page.frame_locator("iframe").locator(
                         ".modal-title-container"
                     ).click()
-                    # await page.click("text=Post")
+                    await page.click("text=Post", timeout=2000)
                     await page.wait_for_timeout(1000)
 
                 # save

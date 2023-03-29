@@ -213,7 +213,7 @@ try:
 
     # mark
     mark_duration = 10
-    bg_music_file = AudioFileClip("./media/bg_music/smoke.mp3")
+    bg_music_file = AudioFileClip("./media/bg_music/smoke.mp3").subclip(15)
     bg_music = CompositeAudioClip([bg_music_file]).set_duration(mark_duration)
 
     mark = (

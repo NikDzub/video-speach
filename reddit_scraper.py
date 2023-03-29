@@ -25,7 +25,7 @@ history_json = open("./etc/reddit_history.json", encoding="utf-8")
 history = json.load(history_json)
 
 # urls
-reddit_urls_json = open("./etc/reddit_history.json", encoding="utf-8")
+reddit_urls_json = open("./etc/reddit_urls.json", encoding="utf-8")
 reddit_urls = json.load(reddit_urls_json)
 
 # selectors :
