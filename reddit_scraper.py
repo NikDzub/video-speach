@@ -5,13 +5,11 @@ from playwright_stealth import stealth_async
 import sys
 import random
 import re
-
-head = False
+import datetime
 
 # args
-name_of_script = sys.argv[0]
-n_comments = sys.argv[1]
-
+head = False
+n_comments = int(sys.argv[1])
 
 # handles
 async def block_media(route, req):
@@ -27,15 +25,8 @@ history_json = open("./etc/reddit_history.json", encoding="utf-8")
 history = json.load(history_json)
 
 # urls
-urls = [
-    "https://www.reddit.com/r/AskReddit/top/?t=hour",
-    "https://www.reddit.com/r/AskReddit/top/?t=day",
-    "https://www.reddit.com/r/Funnymemes/top/?t=day",
-    "https://www.reddit.com/r/funny/top/?t=day",
-    "https://www.reddit.com/r/selfimprovement/top/?t=day",
-    "https://www.reddit.com/r/malementalhealth/top/?t=day",
-    "https://www.reddit.com/r/Tinder/top/?t=day",
-]
+reddit_urls_json = open("./etc/reddit_history.json", encoding="utf-8")
+reddit_urls = json.load(reddit_urls_json)
 
 # selectors :
 # /r/*
@@ -44,7 +35,6 @@ post_home_selector = 'div[class*="Post"]'
 post_selector = 'div[data-testid*="post-container"]'
 post_title_selector = 'div[data-adclicklocation="title"]'
 post_txt_selector = 'div[data-click-id="text"]'  # optional
-
 comment_selector = 'div[class*="Comment"]'
 comment_txt_selector = 'div[data-testid="comment"]'
 
@@ -61,9 +51,8 @@ async def main():
             await page.set_viewport_size({"width": 700, "height": 700})
             await page.emulate_media(color_scheme="dark")
 
-            await page.goto(random.choice(urls), wait_until="networkidle")
+            await page.goto(random.choice(reddit_urls), wait_until="networkidle")
             post_home = await page.wait_for_selector(post_home_selector)
-            print("/r/* loaded")
             # /r/* loaded
 
             # toggle dark mode
@@ -72,24 +61,17 @@ async def main():
                 await page.click('i[class*="icon-night"]', timeout=1000)
                 menu = await page.query_selector('div[role="menu"]')
                 await menu.evaluate('e => e.style.display = "none"')
-                print("toggle dark mode")
             except:
                 pass
 
             # go to /r/*/comments/*
             await post_home.click()
             await page.reload(wait_until="domcontentloaded")
-            print("/r/*/comments/* loaded 0")
 
             await page.wait_for_selector(comment_selector)
-            print(1)
             await page.wait_for_selector(comment_txt_selector)
-            print(2)
             post = await page.wait_for_selector(post_selector)
-            print(3)
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
-            print(4)
-            print("/r/*/comments/* loaded 1")
             # page loaded
 
             # check url
@@ -97,8 +79,8 @@ async def main():
             if post_url in history:
                 await page.close()
                 await browser.close()
-                print("url used")
-                # sys.exit(1)
+                # print("url used")
+                return sys.exit(1)
                 # ⛔️
 
             # ✅
@@ -106,7 +88,6 @@ async def main():
             post_title = await page.wait_for_selector(post_title_selector)
             post_title = await post_title.inner_text()
             post_title = re.sub(r"\W_+", "", post_title)
-            print(post_title)
 
             # get post txt - optional
             try:
@@ -128,37 +109,29 @@ async def main():
             comments = []
             comments_img_path = "./media/post/comments"
 
-            print("comments:")
-            print(comment_blocks.__len__())
-            print(comment_txts.__len__())
+            comment_txts__len = comment_txts.__len__()
 
             # loop over txt's & screenshot block w same index
-            if comment_blocks.__len__() > int(
-                n_comments
-            ) and comment_txts.__len__() > int(n_comments):
+            for index, comment_txt in enumerate(comment_txts):
+                if (
+                    index < n_comments and comment_txts__len > n_comments
+                ):  # first comment might be a pin
+                    try:
+                        txt = await comment_txt.inner_text()  # might trow error
 
-                for index, comment_txt in enumerate(comment_txts):
-                    if (
-                        index < int(n_comments) and index != 0
-                    ):  # first comment migth be a pin
-                        try:
-                            txt = await comment_txt.inner_text()
-
-                            if txt.__len__() > 0:
-                                path = f"{comments_img_path}/{index}/comment.png"
-                                speach_path = (
-                                    f"{comments_img_path}/{index}/comment_speach.aiff"
-                                )
-
-                                await comment_blocks[index].scroll_into_view_if_needed(
-                                    timeout=1000
-                                )
-                                await comment_blocks[index].evaluate(
-                                    'e => e.style.paddingBottom="50px"'
-                                )
-                                await comment_blocks[index].screenshot(path=path)  # 📸
-                                txt = re.sub(r"\W_+", "", txt)
-
+                        if txt.__len__() > 0:
+                            path = f"{comments_img_path}/{index}/comment.png"
+                            speach_path = (
+                                f"{comments_img_path}/{index}/comment_speach.aiff"
+                            )
+                            await comment_blocks[index].scroll_into_view_if_needed(
+                                timeout=1000
+                            )
+                            await comment_blocks[index].evaluate(
+                                'e => e.style.paddingBottom="50px"'
+                            )
+                            await comment_blocks[index].screenshot(path=path)  # 📸
+                            txt = re.sub(r"\W_+", "", txt)
                             # append to comments array
                             comment = {
                                 "comment_txt": txt,
@@ -166,31 +139,36 @@ async def main():
                                 "comment_speach": speach_path,
                             }
                             comments.append(comment)
+                    except:
+                        pass
 
-                        except:
-                            pass
+            if comments.__len__() == n_comments:
+                # post.json construction
+                post_json = {
+                    "post_url": post_url,
+                    "post_txt": post_title,
+                    "post_img": post_img_path,
+                    "post_speach": "./media/post/post_speach.aiff",
+                    "comments": comments,
+                }
 
-            # post.json construction
-            post_json = {
-                "post_url": post_url,
-                "post_txt": post_title,
-                "post_img": post_img_path,
-                "post_speach": "./media/post/post_speach.aiff",
-                "comments": comments,
-            }
+                # save post.json
+                with open("./media/post/post.json", "w") as outfile:
+                    json.dump(post_json, outfile)
 
-            # save post.json
-            with open("./media/post/post.json", "w") as outfile:
-                json.dump(post_json, outfile)
+                # append url to history.json
+                with open("./etc/reddit_history.json", "w") as outfile:
+                    history.append(post_url)
+                    json.dump(history, outfile)
 
-            # save to history
-            with open("./etc/reddit_history.json", "w") as outfile:
-                history.append(post_url)
-                json.dump(history, outfile)
+                # finished
+                await page.close()
+                await browser.close()
+                print(datetime.datetime.now())
+                sys.exit(0)
 
-            await page.close()
-            await browser.close()
-            sys.exit(0)
+            else:
+                return sys.exit(1)
 
         await a_1()
 

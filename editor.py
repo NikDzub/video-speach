@@ -22,6 +22,8 @@ try:
 
     # generate title
     ignore_words = [
+        "fuck",
+        "fucking",
         "all",
         "just",
         "being",
@@ -199,6 +201,7 @@ try:
 
         comment_clip = (
             ImageClip(comment["comment_img"])
+            .set_position("center", "center")
             .set_opacity(0.8)
             .resize(width=width)
             .margin(top=200, opacity=0)
@@ -215,10 +218,10 @@ try:
 
     mark = (
         ImageClip("./media/mark/free_coins_1.png")
+        .set_position("center", "center")
         .set_duration(mark_duration)
         .set_opacity(0.8)
         .resize(width=width)
-        .margin(top=200, opacity=0)
         .set_fps(24)
         .set_audio(bg_music)
     )
