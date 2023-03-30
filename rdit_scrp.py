@@ -38,20 +38,69 @@ post_txt_selector = 'div[data-click-id="text"]'  # optional
 comment_selector = 'div[class*="Comment"]'
 comment_txt_selector = 'div[data-testid="comment"]'
 
+# mobile selectors
+# /r/
+nav_slct = 'div[class*="CommunityHeader-text-row m-top-margin"] nav'
+post_slct = 'a[class*="Post__link"][href*="comments"]'
+post_com_slct = 'a[class*="PostFooter"][href*="comments"]'
+# /comments
+more_com_slct = 'div[class*="m-more"]'
+top_com_slct = 'div[class*="Tree"][class*="m-toplevel"]'
+
 
 async def main():
     async with async_playwright() as p:
 
         async def a_1():
-            browser = await p.chromium.launch(
-                headless=head,
+            browser = await p.chromium.launch(headless=head)
+            page = await browser.new_page(
+                storage_state="./cookies/reddit/rdit_scrp.json",
+                user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 16_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Mobile/15E148 Safari/604.1",
             )
-            page = await browser.new_page()
             await stealth_async(page)
-            await page.set_viewport_size({"width": 700, "height": 700})
+            await page.set_viewport_size({"width": 600, "height": 700})
             await page.emulate_media(color_scheme="dark")
 
             await page.goto(random.choice(reddit_urls), wait_until="networkidle")
+
+            # pop up
+            await page.click('text="Continue"')
+
+            # get all posts
+            posts = await page.query_selector_all(post_com_slct)
+            for post in posts:
+                post_url = await post.get_attribute("href")
+                post_com_count = await post.inner_text()
+                print(f"{post_url} {post_com_count}")
+
+            await posts[0].click()
+            await page.wait_for_selector(top_com_slct)
+            # loaded
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
+
+            all_com = await page.query_selector_all(top_com_slct)
+            print(all_com.__len__())
+
+            for index, com in enumerate(all_com):
+                is_pin = (
+                    "I am a bot, and this action was performed automatically. Please contact the moderators of this subreddit if you have any questions or concerns"
+                    in (await com.inner_text())
+                )
+                if is_pin:
+                    print(f"is pin {index}")
+                    await com.evaluate("e=>e.remove();")
+                    all_com.pop(index)
+
+            print(all_com.__len__())
+
+            try:
+                more_com = await page.wait_for_selector(more_com_slct, timeout=2000)
+            except:
+                pass
+
+            print("time")
+            await page.wait_for_timeout(435435345)
+
             post_home = await page.wait_for_selector(post_home_selector, timeout=3000)
             # /r/* loaded
 
