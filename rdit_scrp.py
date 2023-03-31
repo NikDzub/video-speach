@@ -7,18 +7,9 @@ import random
 import re
 import datetime
 
-# args
+# script args
 head = False
 n_comments = int(sys.argv[1])
-
-# handles
-async def block_media(route, req):
-    if req.resource_type in {"image", "media", "font", "stylesheet", "css"}:
-        try:
-            await route.abort()
-        except:
-            pass
-
 
 # history
 history_json = open("./etc/reddit_history.json", encoding="utf-8")
@@ -28,24 +19,27 @@ history = json.load(history_json)
 reddit_urls_json = open("./etc/reddit_urls.json", encoding="utf-8")
 reddit_urls = json.load(reddit_urls_json)
 
-# selectors :
-# /r/*
-post_home_selector = 'div[class*="Post"]'
-# /r/*/comments/*
-post_selector = 'div[data-testid*="post-container"]'
-post_title_selector = 'div[data-adclicklocation="title"]'
-post_txt_selector = 'div[data-click-id="text"]'  # optional
-comment_selector = 'div[class*="Comment"]'
-comment_txt_selector = 'div[data-testid="comment"]'
-
 # mobile selectors
 # /r/
 nav_slct = 'div[class*="CommunityHeader-text-row m-top-margin"] nav'
 post_slct = 'a[class*="Post__link"][href*="comments"]'
 post_com_slct = 'a[class*="PostFooter"][href*="comments"]'
 # /comments
-more_com_slct = 'div[class*="m-more"]'
 top_com_slct = 'div[class*="Tree"][class*="m-toplevel"]'
+top_com_body_slct = (
+    'div[class*="Tree"][class*="m-toplevel"] div[class*="Comment__body"]'
+)
+every_com_slct = 'div[class*="m-comment"]'
+post_title_slct = 'h1[class*="post-title"]'
+post_content_slct = 'div[class*="PostContent"]'  # migth b text or img
+post_content_title_slct = 'article[class*="Post"]'
+# for removal
+com_timestamp_slct = 'div[class*="CommentHeader__timestamp"]'
+more_com_slct = 'div[class*="m-more"]'
+com_tools_slct = 'div[class*="Comment__tools"]'
+com_head_more_slct = ['td[class*="CommentHeader__colMore"]']
+post_footer_slct = 'footer[class*="PostFooter"]'
+post_header_slct = 'a[href*="/r/"]'
 
 
 async def main():
@@ -60,68 +54,25 @@ async def main():
             await stealth_async(page)
             await page.set_viewport_size({"width": 600, "height": 700})
             await page.emulate_media(color_scheme="dark")
-
             await page.goto(random.choice(reddit_urls), wait_until="networkidle")
 
-            # pop up
+            # close pop up
             await page.click('text="Continue"')
 
-            # get all posts
+            # get all posts + comment-count
             posts = await page.query_selector_all(post_com_slct)
             for post in posts:
-                post_url = await post.get_attribute("href")
-                post_com_count = await post.inner_text()
-                print(f"{post_url} {post_com_count}")
+                pass
+                # post_url = await post.get_attribute("href")
+                # post_com_count = await post.inner_text()
+                # print(f"{post_url} {post_com_count}")
 
+            # go to top post
             await posts[0].click()
             await page.wait_for_selector(top_com_slct)
-            # loaded
+            await page.wait_for_selector(every_com_slct)
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
-
-            all_com = await page.query_selector_all(top_com_slct)
-            print(all_com.__len__())
-
-            for index, com in enumerate(all_com):
-                is_pin = (
-                    "I am a bot, and this action was performed automatically. Please contact the moderators of this subreddit if you have any questions or concerns"
-                    in (await com.inner_text())
-                )
-                if is_pin:
-                    print(f"is pin {index}")
-                    await com.evaluate("e=>e.remove();")
-                    all_com.pop(index)
-
-            print(all_com.__len__())
-
-            try:
-                more_com = await page.wait_for_selector(more_com_slct, timeout=2000)
-            except:
-                pass
-
-            print("time")
-            await page.wait_for_timeout(435435345)
-
-            post_home = await page.wait_for_selector(post_home_selector, timeout=3000)
-            # /r/* loaded
-
-            # toggle dark mode
-            try:
-                await page.click('div[class="header-user-dropdown"]', timeout=3000)
-                await page.click('i[class*="icon-night"]', timeout=3000)
-                menu = await page.query_selector('div[role="menu"]')
-                await menu.evaluate('e => e.style.display = "none"')
-            except:
-                pass
-
-            # go to /r/*/comments/*
-            await post_home.click()
-            await page.reload(wait_until="domcontentloaded")
-
-            await page.wait_for_selector(comment_selector, timeout=3000)
-            await page.wait_for_selector(comment_txt_selector, timeout=3000)
-            post = await page.wait_for_selector(post_selector, timeout=3000)
-            await page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
-            # page loaded
+            # /comments loaded
 
             # check url
             post_url = page.url
@@ -132,15 +83,53 @@ async def main():
                 return sys.exit(1)
                 # ⛔️
 
+            # check if video
+            is_video = await page.wait_for_selector(
+                'div[class*="PostContent"] video', timeout=500
+            )
+            if bool(is_video):
+                await page.close()
+                await browser.close()
+                print("is video")
+                return sys.exit(1)
+                # ⛔️
+
+            # remove unwanted comments
+            all_com = await page.query_selector_all(every_com_slct)
+            for index, com in enumerate(all_com):
+                com_text = await com.inner_text()
+                unwanted = ["[deleted]", "I am a bot"]
+                is_pin = [e for e in unwanted if (e in com_text)]
+
+                if bool(is_pin):
+                    await com.evaluate("e=>e.remove();")
+                    all_com.pop(index)
+
+            # remove unwanted elements
+            async def remover(slct):
+                try:
+                    more_com = await page.query_selector_all(slct)
+                    for com in more_com:
+                        await com.evaluate("e=>e.remove();")
+                except:
+                    pass
+
+            await remover(more_com_slct)
+            await remover(com_timestamp_slct)
+            await remover(com_tools_slct)
+            await remover(com_head_more_slct)
+            await remover(post_header_slct)
+            await remover(post_footer_slct)
+
             # ✅
             # get post title
-            post_title = await page.wait_for_selector(post_title_selector, timeout=3000)
+            post_title = await page.wait_for_selector(post_title_slct, timeout=3000)
             post_title = await post_title.inner_text()
             post_title = re.sub(r"\W_+", "", post_title)
 
-            # get post txt - optional
+            # get post content - migth b img
             try:
-                post_txt = await page.wait_for_selector(post_txt_selector, timeout=3000)
+                post_txt = await page.wait_for_selector(post_content_slct, timeout=3000)
                 post_txt = await post_txt.inner_text()
                 post_title += re.sub(r"\W_+", "", post_txt)
 
@@ -148,12 +137,13 @@ async def main():
                 pass
 
             # get post screen shot 📸
+            post = await page.wait_for_selector(post_content_title_slct)
             post_img_path = "./media/post/post.png"
             await post.screenshot(path=post_img_path)
 
             # comment images & txt should sync by order
-            comment_blocks = await page.query_selector_all(comment_selector)
-            comment_txts = await page.query_selector_all(comment_txt_selector)
+            comment_blocks = await page.query_selector_all(top_com_slct)
+            comment_txts = await page.query_selector_all(top_com_body_slct)
 
             comments = []
             comments_img_path = "./media/post/comments"
