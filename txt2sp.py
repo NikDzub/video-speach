@@ -11,10 +11,10 @@ try:
     post = json.load(post_json)
 
     voices = engine.getProperty("voices")
-    acceptable_voices = [0, 1, 6, 7, 11, 16, 17, 18, 21, 26, 27, 28, 32, 33]
+    acceptable_voices = [0, 1, 6, 7, 5, 17, 26, 27, 28, 32, 33, 37, 40, 45]
 
     engine.setProperty("rate", 280)
-    engine.setProperty("volume", 1)
+    engine.setProperty("volume", 1.2)
 
     # comments
     for index, comment in enumerate(post["comments"]):

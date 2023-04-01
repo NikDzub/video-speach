@@ -25,6 +25,7 @@ nav_slct = 'div[class*="CommunityHeader-text-row m-top-margin"] nav'
 post_slct = 'a[class*="Post__link"][href*="comments"]'
 post_com_slct = 'a[class*="PostFooter"][href*="comments"]'
 # /comments
+top_nav = 'nav[class*="TopNav"]'
 top_com_slct = 'div[class*="Tree"][class*="m-toplevel"]'
 top_com_body_slct = (
     'div[class*="Tree"][class*="m-toplevel"] div[class*="Comment__body"]'
@@ -34,6 +35,7 @@ post_title_slct = 'h1[class*="post-title"]'
 post_content_slct = 'div[class*="PostContent"]'  # migth b text or img
 post_content_title_slct = 'article[class*="Post"]'
 # for removal
+nav_bluish = 'header[class*="PostHeader"] div'
 com_timestamp_slct = 'div[class*="CommentHeader__timestamp"]'
 more_com_slct = 'div[class*="m-more"]'
 com_tools_slct = 'div[class*="Comment__tools"]'
@@ -52,12 +54,14 @@ async def main():
                 user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 16_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Mobile/15E148 Safari/604.1",
             )
             await stealth_async(page)
-            await page.set_viewport_size({"width": 600, "height": 700})
+            # await page.set_viewport_size({"width": 600, "height": 1000})
             await page.emulate_media(color_scheme="dark")
             await page.goto(random.choice(reddit_urls), wait_until="networkidle")
 
             # close pop up
             await page.click('text="Continue"')
+            print("time")
+            await page.wait_for_timeout(435434545)
 
             # get all posts + comment-count
             posts = await page.query_selector_all(post_com_slct)
@@ -72,10 +76,12 @@ async def main():
             await page.wait_for_selector(top_com_slct)
             await page.wait_for_selector(every_com_slct)
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
+            print("loadded")
             # /comments loaded
 
             # check url
             post_url = page.url
+            print(f"post url:{post_url}")
             if post_url in history:
                 await page.close()
                 await browser.close()
@@ -120,13 +126,15 @@ async def main():
             await remover(com_head_more_slct)
             await remover(post_header_slct)
             await remover(post_footer_slct)
+            await remover(top_nav)
+            await remover(nav_bluish)
+            print("items removed")
 
             # ✅
             # get post title
             post_title = await page.wait_for_selector(post_title_slct, timeout=3000)
             post_title = await post_title.inner_text()
             post_title = re.sub(r"\W_+", "", post_title)
-
             # get post content - migth b img
             try:
                 post_txt = await page.wait_for_selector(post_content_slct, timeout=3000)
@@ -135,11 +143,14 @@ async def main():
 
             except:
                 pass
+            print(f"title:{post_title}")
 
             # get post screen shot 📸
             post = await page.wait_for_selector(post_content_title_slct)
             post_img_path = "./media/post/post.png"
+            await post.evaluate('e=>e.style.padding="20px"')
             await post.screenshot(path=post_img_path)
+            print("screen shot post")
 
             # comment images & txt should sync by order
             comment_blocks = await page.query_selector_all(top_com_slct)
@@ -149,27 +160,27 @@ async def main():
             comments_img_path = "./media/post/comments"
 
             comment_txts__len = comment_txts.__len__()
+            print(f"comments length:{comment_txts__len}")
 
             # loop over txt's & screenshot block w same index
             for index, comment_txt in enumerate(comment_txts):
-                if (
-                    index < n_comments and comment_txts__len > n_comments
-                ):  # first comment might be a pin
+                if index < n_comments and comment_txts__len > n_comments:
                     try:
                         txt = await comment_txt.inner_text()  # might trow error
+                        print(f"comment {index} txt: {txt}")
 
                         if txt.__len__() > 0:
                             path = f"{comments_img_path}/{index}/comment.png"
                             speach_path = (
                                 f"{comments_img_path}/{index}/comment_speach.aiff"
                             )
-                            await comment_blocks[index].scroll_into_view_if_needed(
-                                timeout=3000
-                            )
+                            await comment_blocks[index].scroll_into_view_if_needed()
+                            await page.wait_for_timeout(500)
                             await comment_blocks[index].evaluate(
-                                'e => e.style.paddingBottom="50px"'
+                                'e => e.style.padding="20px"'
                             )
                             await comment_blocks[index].screenshot(path=path)  # 📸
+                            print(f"screen shot comment {index}")
                             txt = re.sub(r"\W_+", "", txt)
                             # append to comments array
                             comment = {
@@ -207,6 +218,9 @@ async def main():
                 sys.exit(0)
 
             else:
+                print(f"{comments.__len__()} != {n_comments}")
+                await page.close()
+                await browser.close()
                 return sys.exit(1)
 
         await a_1()

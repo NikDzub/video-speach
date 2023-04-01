@@ -5,7 +5,7 @@ engine.setProperty("rate", 300)
 
 voices = engine.getProperty("voices")
 # engine.setProperty('voice', voices[3].id)
-# 0 1 6 7 11 16 17 18 21 26 27 28 32 33
+# 0 1 6 7 5 17 26 27 28 32 33 37 40 45
 
 for index, voice in enumerate(voices):
 
