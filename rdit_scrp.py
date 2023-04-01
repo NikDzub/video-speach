@@ -42,6 +42,15 @@ com_tools_slct = 'div[class*="Comment__tools"]'
 com_head_more_slct = ['td[class*="CommentHeader__colMore"]']
 post_footer_slct = 'footer[class*="PostFooter"]'
 post_header_slct = 'a[href*="/r/"]'
+remove_elements = [
+    nav_bluish,
+    com_timestamp_slct,
+    more_com_slct,
+    com_tools_slct,
+    com_head_more_slct,
+    post_footer_slct,
+    post_header_slct,
+]
 
 
 async def main():
@@ -54,14 +63,12 @@ async def main():
                 user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 16_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Mobile/15E148 Safari/604.1",
             )
             await stealth_async(page)
-            # await page.set_viewport_size({"width": 600, "height": 1000})
+            await page.set_viewport_size({"width": 600, "height": 1000})
             await page.emulate_media(color_scheme="dark")
             await page.goto(random.choice(reddit_urls), wait_until="networkidle")
 
             # close pop up
             await page.click('text="Continue"')
-            print("time")
-            await page.wait_for_timeout(435434545)
 
             # get all posts + comment-count
             posts = await page.query_selector_all(post_com_slct)
@@ -76,16 +83,16 @@ async def main():
             await page.wait_for_selector(top_com_slct)
             await page.wait_for_selector(every_com_slct)
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
-            print("loadded")
+            # print("loadded")
             # /comments loaded
 
             # check url
             post_url = page.url
-            print(f"post url:{post_url}")
+            # print(f"post url:{post_url}")
             if post_url in history:
                 await page.close()
                 await browser.close()
-                print("url used")
+                print(f"{post_url} allready used")
                 return sys.exit(1)
                 # ⛔️
 
@@ -96,11 +103,11 @@ async def main():
             if bool(is_video):
                 await page.close()
                 await browser.close()
-                print("is video")
+                print(f"{post_url} is video")
                 return sys.exit(1)
                 # ⛔️
 
-            # remove unwanted comments
+            # remove unwanted comments (pins,bots,deleted)
             all_com = await page.query_selector_all(every_com_slct)
             for index, com in enumerate(all_com):
                 com_text = await com.inner_text()
@@ -111,7 +118,7 @@ async def main():
                     await com.evaluate("e=>e.remove();")
                     all_com.pop(index)
 
-            # remove unwanted elements
+            # remove unwanted elements (style pref)
             async def remover(slct):
                 try:
                     more_com = await page.query_selector_all(slct)
@@ -120,22 +127,16 @@ async def main():
                 except:
                     pass
 
-            await remover(more_com_slct)
-            await remover(com_timestamp_slct)
-            await remover(com_tools_slct)
-            await remover(com_head_more_slct)
-            await remover(post_header_slct)
-            await remover(post_footer_slct)
-            await remover(top_nav)
-            await remover(nav_bluish)
-            print("items removed")
+            for element in remove_elements:
+                await remover(element)
 
-            # ✅
+            # ✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅✅
             # get post title
             post_title = await page.wait_for_selector(post_title_slct, timeout=3000)
             post_title = await post_title.inner_text()
             post_title = re.sub(r"\W_+", "", post_title)
-            # get post content - migth b img
+
+            # get post content - can b img
             try:
                 post_txt = await page.wait_for_selector(post_content_slct, timeout=3000)
                 post_txt = await post_txt.inner_text()
@@ -143,32 +144,25 @@ async def main():
 
             except:
                 pass
-            print(f"title:{post_title}")
 
-            # get post screen shot 📸
+            # post screen shot 📸
             post = await page.wait_for_selector(post_content_title_slct)
             post_img_path = "./media/post/post.png"
             await post.evaluate('e=>e.style.padding="20px"')
             await post.screenshot(path=post_img_path)
-            print("screen shot post")
 
-            # comment images & txt should sync by order
+            # comment screenshots *should* sync with the txt
             comment_blocks = await page.query_selector_all(top_com_slct)
             comment_txts = await page.query_selector_all(top_com_body_slct)
-
-            comments = []
             comments_img_path = "./media/post/comments"
-
             comment_txts__len = comment_txts.__len__()
-            print(f"comments length:{comment_txts__len}")
+            comments = []
 
-            # loop over txt's & screenshot block w same index
+            # loop over txt's & screenshot-block w same index
             for index, comment_txt in enumerate(comment_txts):
                 if index < n_comments and comment_txts__len > n_comments:
-                    try:
-                        txt = await comment_txt.inner_text()  # might trow error
-                        print(f"comment {index} txt: {txt}")
-
+                    try:  # gif/img comment will throw err
+                        txt = await comment_txt.inner_text()
                         if txt.__len__() > 0:
                             path = f"{comments_img_path}/{index}/comment.png"
                             speach_path = (
@@ -180,8 +174,8 @@ async def main():
                                 'e => e.style.padding="20px"'
                             )
                             await comment_blocks[index].screenshot(path=path)  # 📸
-                            print(f"screen shot comment {index}")
                             txt = re.sub(r"\W_+", "", txt)
+
                             # append to comments array
                             comment = {
                                 "comment_txt": txt,
@@ -190,10 +184,11 @@ async def main():
                             }
                             comments.append(comment)
                     except:
+                        comment_txts.pop(index)
                         pass
 
             if comments.__len__() == n_comments:
-                # post.json construction
+                # got the requested ammount of comments
                 post_json = {
                     "post_url": post_url,
                     "post_txt": post_title,
@@ -214,11 +209,11 @@ async def main():
                 # finished
                 await page.close()
                 await browser.close()
-                print(f"{sys.argv[0]} {datetime.datetime.now()}")
+                print(f"{sys.argv[0]} ✅ {datetime.datetime.now()}")
                 sys.exit(0)
 
             else:
-                print(f"{comments.__len__()} != {n_comments}")
+                # print(f"{comments.__len__()} != {n_comments}")
                 await page.close()
                 await browser.close()
                 return sys.exit(1)

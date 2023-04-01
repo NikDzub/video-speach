@@ -167,7 +167,7 @@ try:
         if index < 5:
             vid_title += word[0] + " "
 
-    print(vid_title)
+    # print(vid_title)
 
     # game bg
     games = os.listdir("./media/games")
@@ -190,7 +190,7 @@ try:
         .set_opacity(0.8)
         .set_fps(24)
         .set_audio(post_audio)
-        .set_duration(post_audio.duration)
+        .set_duration(post_audio.duration + 3)  # add few sec if img post
     )
     reddit_clips.append(post_clip)
 
@@ -212,7 +212,7 @@ try:
         reddit_clips.append(comment_clip)
 
     # mark
-    mark_duration = 10
+    mark_duration = 5
     bg_music_file = AudioFileClip("./media/bg_music/smoke.mp3").subclip(15)
     bg_music = CompositeAudioClip([bg_music_file]).set_duration(mark_duration)
 
@@ -245,7 +245,9 @@ try:
 
     # compose & save
     all_clips = CompositeVideoClip(clips=[game_clip, reddit_clips_concat])
-    all_clips.write_videofile(f"./media/vids/{vid_title}#reddit.mp4")
+    all_clips.write_videofile(
+        f"./media/vids/{vid_title} #{most_common[0][0]} #{most_common[1][0]} #reddit.mp4"
+    )
     sys.exit(0)
 
 except:

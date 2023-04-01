@@ -2,6 +2,7 @@ import pyttsx3
 import json
 import random
 import sys
+import datetime
 
 engine = pyttsx3.init()
 
@@ -32,6 +33,8 @@ try:
     engine.save_to_file(post_txt, f"./media/post/post_speach.aiff")
 
     engine.runAndWait()
+    print(f"{sys.argv[0]} ✅ {datetime.datetime.now()}")
     sys.exit(0)
+
 except:
     sys.exit(1)
