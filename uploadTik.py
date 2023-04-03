@@ -98,7 +98,10 @@ async def main():
                     await page.click("text=Post", timeout=2000)
                     await page.wait_for_timeout(1000)
 
-                # save
+                    # delete video
+                    os.remove(f"{vids_path}/{vid}")
+
+                # save new cookie
                 await browser.contexts[0].storage_state(
                     path=f"{states_path}/{state}.json"
                 )
