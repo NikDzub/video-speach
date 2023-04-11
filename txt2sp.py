@@ -34,7 +34,7 @@ try:
 
     engine.runAndWait()
     print(f"{sys.argv[0]} ✅ {datetime.datetime.now()}")
-    sys.exit(0)
+    sys.exit(1)
 
 except:
-    sys.exit(1)
+    sys.exit(0)
