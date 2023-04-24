@@ -4,9 +4,8 @@
 
 python rdit_scrp.py 6 && python3 txt2sp.py && python editor.py && python uploadTik.py
 
-python path:/usr/bin/python3
-python3 path:/Library/Frameworks/Python.framework/Versions/3.10/bin/python3
-cron:_/1 _ \* \* \* cd ~/Desktop/moviepy && /usr/bin/python3 rdit_scrp.py 6 && /Library/Frameworks/Python.framework/Versions/3.10/bin/python3 txt2sp.py && /usr/bin/python3 editor.py && /usr/bin/python3 uploadTik.py >> ~/Desktop/moviepy/cron.txt 2>&1
+
+cron:*/1 * * * * cd ~/Desktop/moviepy && /usr/bin/python3 rdit_scrp.py 6 && /Library/Frameworks/Python.framework/Versions/3.10/bin/python3 txt2sp.py && /usr/bin/python3 editor.py && /usr/bin/python3 uploadTik.py >> ~/Desktop/moviepy/cron.txt 2>&1
 
 <hr>
 
