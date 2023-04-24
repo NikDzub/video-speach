@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from playwright.async_api import async_playwright
 from playwright_stealth import stealth_async
 import asyncio
@@ -18,6 +19,7 @@ vids_path = "./media/vids"
 vids = os.listdir(vids_path)
 if ".DS_Store" in vids:
     vids.remove(".DS_Store")
+
 
 # handles
 async def block_media(route, req):
@@ -40,6 +42,7 @@ async def get_user_id(res):
 
 
 print(f"{states_path} & {vids_path}")
+
 
 # ▶️
 async def main():

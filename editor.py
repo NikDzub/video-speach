@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import os
 import json
 import random
@@ -19,7 +20,6 @@ post_json = open("./media/post/post.json", encoding="utf-8")
 post = json.load(post_json)
 
 try:
-
     # generate title
     ignore_words = [
         "fuck",
@@ -248,7 +248,7 @@ try:
     all_clips.write_videofile(
         f"./media/vids/{vid_title} #{most_common[0][0]} #{most_common[1][0]} #reddit.mp4"
     )
-    sys.exit(0)
+    sys.exit(1)
 
 except:
-    sys.exit(1)
+    sys.exit(0)

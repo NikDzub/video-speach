@@ -1,3 +1,4 @@
+#!/Library/Frameworks/Python.framework/Versions/3.10/bin/python3
 import pyttsx3
 import json
 import random
@@ -7,7 +8,6 @@ import datetime
 engine = pyttsx3.init()
 
 try:
-
     post_json = open("./media/post/post.json")
     post = json.load(post_json)
 
